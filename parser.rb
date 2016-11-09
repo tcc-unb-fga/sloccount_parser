@@ -1,5 +1,4 @@
 #!/usr/bin/ruby
-#
 
 DATA_PATH=ENV['DATA_PATH']
 SLOCC_OUTP = '/tmp/'
@@ -17,6 +16,7 @@ class Parser
      sources
   end
   
+
   def run_sloccount sources
     sources.each do |source|
       if Dir.exists?(DATA_PATH + '/' + source.to_s)
@@ -28,8 +28,23 @@ class Parser
   end
 
   def json file
+    find_sloc_p_line = false
+    find_sloc_line = false
+    sloc_value = ''
     File.open(file).each do |line|
+      # print line
+      if /SLOC/.match(line) and !find_sloc_p_line
+        find_sloc_p_line = true
+        next
+      end
+
+      if find_sloc_p_line and !find_sloc_line
+        sloc_value = line.split(" ")[0]
+        puts "SLOC VALUE: #{sloc_value}"
+        find_sloc_line = true
+      end
     end
+
   end
 end
 
