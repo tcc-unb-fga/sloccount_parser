@@ -1,15 +1,20 @@
 #!/usr/bin/ruby
+require 'json'
+require_relative 'database'
 
 DATA_PATH=ENV['DATA_PATH']
 SLOCC_OUTP = '/tmp/'
 
 class Parser
 
-  attr_accessor :sloc_report, :sloc_value
+  attr_accessor :sloc_report, :sloc_value, :language
+  attr_accessor :n_files
 
   def initialize
     @sloc_report = ''
     @sloc_value = ''
+    @language = ''
+    @n_files = ''
   end
 
   def list
@@ -42,14 +47,19 @@ class Parser
       end
 
       if /Total Physical Source Lines of Code/.match(line)
-        puts "Total Physical Source Lines of Code: #{line_value(line, "=", 1)}"
+        self.n_files = line_value(line, "=", 1)
+        # puts "Total Physical Source Lines of Code: #{line_value(line, "=", 1)}"
       end
 
       if /Totals grouped by language/.match(line)
-        puts "Language: #{line_value((IO.readlines(self.sloc_report)[index + 1]), ":",  0)}"
+        language_line = IO.readlines(self.sloc_report)[index + 1]
+        language = line_value(language_line, ":",  0)
+        # puts "Language: #{language}"
+        self.language = language
       end
-
     end
+    data = Database.new()
+    data.insert(self)
   end
 
   private
@@ -59,7 +69,7 @@ class Parser
       line_tokens = line.split(" ")
       if line_tokens[0] == 'SLOC' and line_tokens[1] == 'Directory'
          self.sloc_value =  line_value((IO.readlines(self.sloc_report)[index + 1]), 0)
-         puts "SLOC VAlUE: #{self.sloc_value}"
+         # puts "SLOC VAlUE: #{self.sloc_value}"
       end
     rescue Exception
       puts 'SLOC value not found in this line'
