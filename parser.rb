@@ -8,13 +8,14 @@ SLOCC_OUTP = '/tmp/'
 class Parser
 
   attr_accessor :sloc_report, :sloc_value, :language
-  attr_accessor :n_files
+  attr_accessor :n_files, :app_name
 
   def initialize
     @sloc_report = ''
     @sloc_value = ''
     @language = ''
     @n_files = ''
+    @app_name = ''
   end
 
   def list
@@ -32,6 +33,7 @@ class Parser
   def run_sloccount sources
     sources.each do |source|
       if Dir.exists?(DATA_PATH + '/' + source.to_s)
+        self.app_name = source.to_s
         self.sloc_report = SLOCC_OUTP + '_' + source.to_s
         `sloccount #{DATA_PATH}/#{source} > #{self.sloc_report}`
         json(self.sloc_report)

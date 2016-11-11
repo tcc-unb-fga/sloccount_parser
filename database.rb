@@ -26,9 +26,9 @@ class Database
   end
 
   def insert parser_obj
-    self.db.execute("INSERT INTO project (sloc, n_files, language) 
-                           VALUES (?, ?, ?)", [parser_obj.sloc_value , 
-                                               parser_obj.n_files, 
+    self.db.execute("INSERT INTO project (sloc, n_files, language)
+                           VALUES (?, ?, ?)", [parser_obj.sloc_value ,
+                                               parser_obj.n_files,
                                                parser_obj.language])
   end
 end
