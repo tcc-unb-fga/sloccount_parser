@@ -8,36 +8,22 @@ SLOCC_OUTP = '/tmp/'
 class Parser
 
   attr_accessor :sloc_report, :sloc_value, :language
-  attr_accessor :n_files, :app_name
+  attr_accessor :n_files, :app, :db
 
   def initialize
     @sloc_report = ''
     @sloc_value = ''
     @language = ''
     @n_files = ''
-    @app_name = ''
+    @app = ''
+    @db = Database.new()
   end
 
-  def list
-     begin
-     sources = Dir.entries(DATA_PATH)
-     sources.delete('.')
-     sources.delete('..')
-    rescue SystemCallError
-      puts "Diretório #{DATA_PATH} não encontrado"
-    end
-     sources
-  end
-
-
-  def run_sloccount sources
-    sources.each do |source|
-      if Dir.exists?(DATA_PATH + '/' + source.to_s)
-        self.app_name = source.to_s
-        self.sloc_report = SLOCC_OUTP + '_' + source.to_s
-        `sloccount #{DATA_PATH}/#{source} > #{self.sloc_report}`
-        json(self.sloc_report)
-      end
+  def call source, files
+    if files
+      `sloccount #{DATA_PATH}/#{source} > #{self.sloc_report}`
+    else
+      `sloccount --filecount #{DATA_PATH}/#{source} > #{self.sloc_report}`
     end
   end
 
@@ -48,20 +34,23 @@ class Parser
         sloc_parse(line, index)
       end
 
-      if /Total Physical Source Lines of Code/.match(line)
-        self.n_files = line_value(line, "=", 1)
-        # puts "Total Physical Source Lines of Code: #{line_value(line, "=", 1)}"
+      if /#Files/.match(line)
+        line = IO.readlines(self.sloc_report)[index + 1]
+        self.n_files = line_value(line, 0)
       end
 
       if /Totals grouped by language/.match(line)
         language_line = IO.readlines(self.sloc_report)[index + 1]
         language = line_value(language_line, ":",  0)
-        # puts "Language: #{language}"
         self.language = language
       end
     end
-    data = Database.new()
-    data.insert(self)
+    self.db.create_db()
+    self.db.insert(self) if check_json
+  end
+
+  def check_json
+    !self.n_files.empty? and !self.sloc_value.empty?
   end
 
   private
@@ -83,6 +72,31 @@ class Parser
   end
 end
 
-a = Parser.new()
-sources = a.list
-a.run_sloccount(sources)
+def exec_sloccount sources
+  sources.each do |source|
+    parser = Parser.new()
+    sources = list
+    if Dir.exists?(DATA_PATH + '/' + source.to_s)
+      parser.app = source.to_s
+      parser.sloc_report = SLOCC_OUTP + '_' + source.to_s
+      parser.call(source, true)
+      parser.json(parser.sloc_report)
+      parser.call(source, false)
+      parser.json(parser.sloc_report)
+    end
+  end
+end
+
+def list
+    begin
+    sources = Dir.entries(DATA_PATH)
+    sources.delete('.')
+    sources.delete('..')
+  rescue SystemCallError
+    puts "Diretório #{DATA_PATH} não encontrado"
+  end
+    sources
+end
+
+sources = list
+exec_sloccount(sources)
